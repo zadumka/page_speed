@@ -91,8 +91,8 @@ def run_pagespeed_and_update_sheet(sheet, sheet_id, range_name, api_key, creds_j
 
 # Введіть ваші дані
 load_dotenv()  # Завантажуємо змінні середовища з .env файлу
-api_key = os.getenv("API_KEY")  # Правильний спосіб отримання API ключа з .env
-sheet_id = "1m0jLAm0521GMY7L1mBiAdZSUSoiCxHdbdWO0N7NBOIA"
+api_key = os.getenv("PAGE_SPEED_SERVICE_API_KEY")  # Правильний спосіб отримання API ключа з .env
+sheet_id = os.getenv("GOOGLE_SHEET_ID")
 range_name = "Resalts!A1:D"  # Зміна діапазону для коректного додавання даних
 creds_json = "./credentials.json"
 
