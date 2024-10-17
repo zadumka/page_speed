@@ -31,11 +31,11 @@ def get_pagespeed_insights(url, api_key):
     return insights
 
 
-def connect_to_google_sheets(sheet_id, creds_json):
+def connect_to_google_sheets(creds_json):
     credentials = Credentials.from_service_account_file(creds_json, scopes=["https://www.googleapis.com/auth/spreadsheets"])
     service = build('sheets', 'v4', credentials=credentials)
-    sheet = service.spreadsheets()
-    return sheet
+    return service.spreadsheets()
+
 
 
 def append_to_google_sheet(sheet, sheet_id, range_name, values):
@@ -56,7 +56,7 @@ def read_urls_from_google_sheet(sheet, sheet_id, range_name):
 
 
 
-def run_pagespeed_and_update_sheet(sheet, sheet_id, api_key, creds_json):
+def run_pagespeed_and_update_sheet(sheet, sheet_id, api_key):
     urls_sheet_range = "URLList!A2:A"  # Вказуємо назву листа та діапазон, де зберігаються URL
     urls_to_test = read_urls_from_google_sheet(sheet, sheet_id, urls_sheet_range)
 
@@ -103,7 +103,7 @@ api_key = os.getenv("PAGE_SPEED_SERVICE_API_KEY")  # Правильний спо
 sheet_id = os.getenv("GOOGLE_SHEET_ID")
 creds_json = "./credentials.json"
 
-sheet = connect_to_google_sheets(sheet_id, creds_json)
-run_pagespeed_and_update_sheet(sheet, sheet_id, api_key, creds_json)
+sheet = connect_to_google_sheets(creds_json)
+run_pagespeed_and_update_sheet(sheet, sheet_id, api_key)
 
 
