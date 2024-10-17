@@ -3,6 +3,8 @@ import google.auth
 from googleapiclient.discovery import build
 from google.oauth2.service_account import Credentials
 from datetime import datetime
+from dotenv import load_dotenv
+import os
 
 
 def get_pagespeed_insights(url, api_key):
@@ -19,13 +21,10 @@ def get_pagespeed_insights(url, api_key):
     insights = {
         "loading_time": data['lighthouseResult']['audits']['speed-index']['displayValue'],
         "performance_score": data['lighthouseResult']['categories']['performance']['score'] * 100,
-        "first_contentful_paint": data['lighthouseResult']['audits']['first-contentful-paint'][
-            'displayValue'],
-        "largest_contentful_paint": data['lighthouseResult']['audits']['largest-contentful-paint'][
-            'displayValue'],
+        "first_contentful_paint": data['lighthouseResult']['audits']['first-contentful-paint']['displayValue'],
+        "largest_contentful_paint": data['lighthouseResult']['audits']['largest-contentful-paint']['displayValue'],
         "time_to_interactive": data['lighthouseResult']['audits']['interactive']['displayValue'],
-        "cumulative_layout_shift": data['lighthouseResult']['audits']['cumulative-layout-shift'][
-            'displayValue'],
+        "cumulative_layout_shift": data['lighthouseResult']['audits']['cumulative-layout-shift']['displayValue'],
         "first_input_delay": data['lighthouseResult']['audits']['max-potential-fid']['displayValue']
     }
 
@@ -33,8 +32,7 @@ def get_pagespeed_insights(url, api_key):
 
 
 def connect_to_google_sheets(sheet_id, creds_json):
-    credentials = Credentials.from_service_account_file(creds_json, scopes=[
-        "https://www.googleapis.com/auth/spreadsheets"])
+    credentials = Credentials.from_service_account_file(creds_json, scopes=["https://www.googleapis.com/auth/spreadsheets"])
     service = build('sheets', 'v4', credentials=credentials)
     sheet = service.spreadsheets()
     return sheet
@@ -90,12 +88,12 @@ def run_pagespeed_and_update_sheet(urls, api_key, sheet_id, range_name, creds_js
 
 
 # Введіть ваші дані
-api_key = "AIzaSyDRX9vQxzcTtZVVcNtYFG5f98nNBF7sXJM"
+load_dotenv()  # Завантажуємо змінні середовища з .env файлу
+api_key = os.getenv("API_KEY")  # Правильний спосіб отримання API ключа з .env
 urls_file = "urls.txt"  # Вкажіть шлях до файлу з URL-адресами
 sheet_id = "1m0jLAm0521GMY7L1mBiAdZSUSoiCxHdbdWO0N7NBOIA"
-range_name = "Sheet1!A1:D1"
+range_name = "Sheet1!A1:D"  # Зміна діапазону для коректного додавання даних
 creds_json = "./credentials.json"
 
 urls_to_test = read_urls_from_file(urls_file)
 run_pagespeed_and_update_sheet(urls_to_test, api_key, sheet_id, range_name, creds_json)
-
