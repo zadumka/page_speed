@@ -48,15 +48,17 @@ def append_to_google_sheet(sheet, sheet_id, range_name, values):
     print(f"{result.get('updates').get('updatedCells')} cells appended.")
 
 
-def read_urls_from_file(filename):
-    with open(filename, 'r') as file:
-        return [line.strip() for line in file if line.strip()]
+def read_urls_from_google_sheet(sheet, sheet_id, range_name):
+    result = sheet.values().get(spreadsheetId=sheet_id, range=range_name).execute()
+    values = result.get('values', [])
+    return [row[0] for row in values if row]  # Повертаємо лише перший стовпець
 
 
-def run_pagespeed_and_update_sheet(urls, api_key, sheet_id, range_name, creds_json):
-    sheet = connect_to_google_sheets(sheet_id, creds_json)
+def run_pagespeed_and_update_sheet(sheet, sheet_id, range_name, api_key, creds_json):
+    urls_sheet_range = "URLList!A2:A"  # Вказуємо назву листа та діапазон, де зберігаються URL
+    urls_to_test = read_urls_from_google_sheet(sheet, sheet_id, urls_sheet_range)
 
-    for url in urls:
+    for url in urls_to_test:
         result = get_pagespeed_insights(url, api_key)
 
         values = [[
@@ -90,10 +92,11 @@ def run_pagespeed_and_update_sheet(urls, api_key, sheet_id, range_name, creds_js
 # Введіть ваші дані
 load_dotenv()  # Завантажуємо змінні середовища з .env файлу
 api_key = os.getenv("API_KEY")  # Правильний спосіб отримання API ключа з .env
-urls_file = "urls.txt"  # Вкажіть шлях до файлу з URL-адресами
 sheet_id = "1m0jLAm0521GMY7L1mBiAdZSUSoiCxHdbdWO0N7NBOIA"
-range_name = "Sheet1!A1:D"  # Зміна діапазону для коректного додавання даних
+range_name = "Resalts!A1:D"  # Зміна діапазону для коректного додавання даних
 creds_json = "./credentials.json"
 
-urls_to_test = read_urls_from_file(urls_file)
-run_pagespeed_and_update_sheet(urls_to_test, api_key, sheet_id, range_name, creds_json)
+sheet = connect_to_google_sheets(sheet_id, creds_json)
+run_pagespeed_and_update_sheet(sheet, sheet_id, range_name, api_key, creds_json)
+
+
