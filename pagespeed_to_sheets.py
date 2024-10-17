@@ -48,15 +48,21 @@ def append_to_google_sheet(sheet, sheet_id, range_name, values):
     print(f"{result.get('updates').get('updatedCells')} cells appended.")
 
 
+
 def read_urls_from_google_sheet(sheet, sheet_id, range_name):
     result = sheet.values().get(spreadsheetId=sheet_id, range=range_name).execute()
     values = result.get('values', [])
     return [row[0] for row in values if row]  # Повертаємо лише перший стовпець
 
 
-def run_pagespeed_and_update_sheet(sheet, sheet_id, range_name, api_key, creds_json):
+
+def run_pagespeed_and_update_sheet(sheet, sheet_id, api_key, creds_json):
     urls_sheet_range = "URLList!A2:A"  # Вказуємо назву листа та діапазон, де зберігаються URL
     urls_to_test = read_urls_from_google_sheet(sheet, sheet_id, urls_sheet_range)
+
+    # Сторінки для кожного хосту
+    range_name_neo = "Results_NEO!A1:D"  # Для хосту goit.global
+    range_name_goit = "Results_Goit!A1:D"  # Для хосту neo Results_Goit!A1:D
 
     for url in urls_to_test:
         result = get_pagespeed_insights(url, api_key)
@@ -85,18 +91,19 @@ def run_pagespeed_and_update_sheet(sheet, sheet_id, range_name, api_key, creds_j
         print(f"Cumulative Layout Shift: {values[0][7]}")
         print(f"First Input Delay: {values[0][8]}")
 
-        # Додаємо результати в Google Sheets
-        append_to_google_sheet(sheet, sheet_id, range_name, values)
-
+        # Визначаємо, на яку сторінку відправляти результати
+        if "i-travel.com.ua" in url:
+            append_to_google_sheet(sheet, sheet_id, range_name_neo, values)
+        elif "goit.global" in url:
+            append_to_google_sheet(sheet, sheet_id, range_name_goit, values)
 
 # Введіть ваші дані
 load_dotenv()  # Завантажуємо змінні середовища з .env файлу
 api_key = os.getenv("PAGE_SPEED_SERVICE_API_KEY")  # Правильний спосіб отримання API ключа з .env
 sheet_id = os.getenv("GOOGLE_SHEET_ID")
-range_name = "Resalts!A1:D"  # Зміна діапазону для коректного додавання даних
 creds_json = "./credentials.json"
 
 sheet = connect_to_google_sheets(sheet_id, creds_json)
-run_pagespeed_and_update_sheet(sheet, sheet_id, range_name, api_key, creds_json)
+run_pagespeed_and_update_sheet(sheet, sheet_id, api_key, creds_json)
 
 
