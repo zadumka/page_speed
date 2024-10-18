@@ -32,7 +32,7 @@ def get_pagespeed_insights(url, api_key):
 
 
 def connect_to_google_sheets(creds_json):
-    credentials = Credentials.from_service_account_file(creds_json, scopes=["https://www.googleapis.com/auth/spreadsheets"])
+    credentials = Credentials.from_service_account_info(creds_json, scopes=["https://www.googleapis.com/auth/spreadsheets"])
     service = build('sheets', 'v4', credentials=credentials)
     return service.spreadsheets()
 
@@ -101,7 +101,22 @@ def run_pagespeed_and_update_sheet(sheet, sheet_id, api_key):
 load_dotenv()  # Завантажуємо змінні середовища з .env файлу
 api_key = os.getenv("PAGE_SPEED_SERVICE_API_KEY")  # Правильний спосіб отримання API ключа з .env
 sheet_id = os.getenv("GOOGLE_SHEET_ID")
-creds_json = "./credentials.json"
+# creds_json = "./credentials.json"
+creds_json = {
+    "type": os.getenv("GOOGLE_SERVICE_ACCOUNT_TYPE"),
+    "project_id": os.getenv("GOOGLE_PROJECT_ID"),
+    "private_key_id": os.getenv("GOOGLE_PRIVATE_KEY_ID"),
+    "private_key": os.getenv("GOOGLE_PRIVATE_KEY").replace("\\n", "\n"),  # Заміна для форматування
+    "client_email": os.getenv("GOOGLE_CLIENT_EMAIL"),
+    "client_id": os.getenv("GOOGLE_CLIENT_ID"),
+    "auth_uri": os.getenv("GOOGLE_AUTH_URI"),
+    "token_uri": os.getenv("GOOGLE_TOKEN_URI"),
+    "auth_provider_x509_cert_url": os.getenv("GOOGLE_AUTH_PROVIDER_CERT_URL"),
+    "client_x509_cert_url": os.getenv("GOOGLE_CLIENT_CERT_URL"),
+    "universe_domain": os.getenv("GOOGLE_UNIVERSE_DOMAIN")
+}
+
+
 
 sheet = connect_to_google_sheets(creds_json)
 run_pagespeed_and_update_sheet(sheet, sheet_id, api_key)
