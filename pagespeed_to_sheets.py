@@ -61,8 +61,8 @@ def run_pagespeed_and_update_sheet(sheet, sheet_id, api_key):
     urls_to_test = read_urls_from_google_sheet(sheet, sheet_id, urls_sheet_range)
 
     # Сторінки для кожного хосту
-    range_name_neo = "Results_NEO!A1:I"  # Для хосту goit.global
-    range_name_goit = "Results_Goit!A1:I"  # Для хосту neo Results_Goit!A1:D
+    range_name_neo = "Results_NEO!A1:I"  # Для хосту neo (в таблиці поки рандомно взята оі нка з гугла)
+    range_name_goit = "Results_Goit!A1:I"  # Для хосту goit.global
 
     for url in urls_to_test:
         result = get_pagespeed_insights(url, api_key)
