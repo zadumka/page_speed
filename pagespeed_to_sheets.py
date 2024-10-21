@@ -1,18 +1,17 @@
-import requests
-import google.auth
-from googleapiclient.discovery import build
-from google.oauth2.service_account import Credentials
-from datetime import datetime
-from dotenv import load_dotenv
 import os
+import requests
+from dotenv import load_dotenv
+from datetime import datetime
+from google.oauth2.service_account import Credentials
+from googleapiclient.discovery import build
 
-
-def get_pagespeed_insights(url, api_key):
+# Функція для отримання результатів PageSpeed Insights
+def get_pagespeed_insights(url, api_key, strategy):
     endpoint = "https://www.googleapis.com/pagespeedonline/v5/runPagespeed"
     params = {
         "url": url,
         "key": api_key,
-        "strategy": "mobile"  # Або 'desktop'
+        "strategy": strategy  # 'mobile' або 'desktop'
     }
     response = requests.get(endpoint, params=params)
     data = response.json()
@@ -30,14 +29,13 @@ def get_pagespeed_insights(url, api_key):
 
     return insights
 
-
+# Функція для підключення до Google Sheets
 def connect_to_google_sheets(creds_json):
     credentials = Credentials.from_service_account_info(creds_json, scopes=["https://www.googleapis.com/auth/spreadsheets"])
     service = build('sheets', 'v4', credentials=credentials)
     return service.spreadsheets()
 
-
-
+# Функція для додавання даних до Google Sheets
 def append_to_google_sheet(sheet, sheet_id, range_name, values):
     body = {
         'values': values
@@ -47,61 +45,72 @@ def append_to_google_sheet(sheet, sheet_id, range_name, values):
         valueInputOption="RAW", body=body).execute()
     print(f"{result.get('updates').get('updatedCells')} cells appended.")
 
-
-
+# Функція для зчитування URL із Google Sheets
 def read_urls_from_google_sheet(sheet, sheet_id, range_name):
     result = sheet.values().get(spreadsheetId=sheet_id, range=range_name).execute()
     values = result.get('values', [])
     return [row[0] for row in values if row]  # Повертаємо лише перший стовпець
 
-
-
+# Функція для запуску PageSpeed Insights і оновлення Google Sheets
 def run_pagespeed_and_update_sheet(sheet, sheet_id, api_key):
     urls_sheet_range = "URLList!A2:A"  # Вказуємо назву листа та діапазон, де зберігаються URL
     urls_to_test = read_urls_from_google_sheet(sheet, sheet_id, urls_sheet_range)
 
     # Сторінки для кожного хосту
-    range_name_neo = "Results_NEO!A1:I"  # Для хосту neo (в таблиці поки рандомно взята оі нка з гугла)
+    range_name_neo = "Results_NEO!A1:I"  # Для хосту neo
     range_name_goit = "Results_Goit!A1:I"  # Для хосту goit.global
 
     for url in urls_to_test:
-        result = get_pagespeed_insights(url, api_key)
+        # Викликаємо функцію двічі: для мобільної та десктопної версії
+        mobile_result = get_pagespeed_insights(url, api_key, "mobile")
+        desktop_result = get_pagespeed_insights(url, api_key, "desktop")
 
-        values = [[
+        # Результати для мобільної версії
+        mobile_values = [[
             str(datetime.now()),
             url,
-            result['loading_time'],
-            result['performance_score'],
-            result['first_contentful_paint'],
-            result['largest_contentful_paint'],
-            result['time_to_interactive'],
-            result['cumulative_layout_shift'],
-            result['first_input_delay']
+            "mobile",  # Додаємо інформацію, що це мобільна версія
+            mobile_result['loading_time'],
+            mobile_result['performance_score'],
+            mobile_result['first_contentful_paint'],
+            mobile_result['largest_contentful_paint'],
+            mobile_result['time_to_interactive'],
+            mobile_result['cumulative_layout_shift'],
+            mobile_result['first_input_delay']
+        ]]
+
+        # Результати для десктопної версії
+        desktop_values = [[
+            str(datetime.now()),
+            url,
+            "desktop",  # Додаємо інформацію, що це десктопна версія
+            desktop_result['loading_time'],
+            desktop_result['performance_score'],
+            desktop_result['first_contentful_paint'],
+            desktop_result['largest_contentful_paint'],
+            desktop_result['time_to_interactive'],
+            desktop_result['cumulative_layout_shift'],
+            desktop_result['first_input_delay']
         ]]
 
         # Виводимо результати в термінал
-        print("Results:")
-        print(f"Date and Time: {values[0][0]}")
-        print(f"URL: {values[0][1]}")
-        print(f"Loading Time: {values[0][2]}")
-        print(f"Performance Score: {values[0][3]}")
-        print(f"First Contentful Paint: {values[0][4]}")
-        print(f"Largest Contentful Paint: {values[0][5]}")
-        print(f"Time to Interactive: {values[0][6]}")
-        print(f"Cumulative Layout Shift: {values[0][7]}")
-        print(f"First Input Delay: {values[0][8]}")
+        print(f"Mobile Results for {url}: {mobile_values}")
+        print(f"Desktop Results for {url}: {desktop_values}")
 
         # Визначаємо, на яку сторінку відправляти результати
         if "i-travel.com.ua" in url:
-            append_to_google_sheet(sheet, sheet_id, range_name_neo, values)
+            append_to_google_sheet(sheet, sheet_id, range_name_neo, mobile_values)
+            append_to_google_sheet(sheet, sheet_id, range_name_neo, desktop_values)
         elif "goit.global" in url:
-            append_to_google_sheet(sheet, sheet_id, range_name_goit, values)
+            append_to_google_sheet(sheet, sheet_id, range_name_goit, mobile_values)
+            append_to_google_sheet(sheet, sheet_id, range_name_goit, desktop_values)
 
 # Введіть ваші дані
 load_dotenv()  # Завантажуємо змінні середовища з .env файлу
 api_key = os.getenv("PAGE_SPEED_SERVICE_API_KEY")  # Правильний спосіб отримання API ключа з .env
 sheet_id = os.getenv("GOOGLE_SHEET_ID")
-# creds_json = "./credentials.json"
+
+# Дані для підключення до Google Sheets
 creds_json = {
     "type": os.getenv("GOOGLE_SERVICE_ACCOUNT_TYPE"),
     "project_id": os.getenv("GOOGLE_PROJECT_ID"),
@@ -116,9 +125,11 @@ creds_json = {
     "universe_domain": os.getenv("GOOGLE_UNIVERSE_DOMAIN")
 }
 
-
-
+# Підключення до Google Sheets
 sheet = connect_to_google_sheets(creds_json)
+
+# Запуск аналізу та оновлення Google Sheets
 run_pagespeed_and_update_sheet(sheet, sheet_id, api_key)
+
 
 
